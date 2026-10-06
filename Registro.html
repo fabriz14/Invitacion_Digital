@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Control de Entrada · Mis XV
+    </title>
+
+
+    <!-- Supabase -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <!-- Lector QR -->
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            background:
+                radial-gradient(
+                    circle at top,
+                    #142c5a,
+                    #050b24 65%
+                );
+
+            color: #f8f0dd;
+
+            font-family:
+                Arial,
+                sans-serif;
+        }
+
+
+        .panel {
+
+            width: min(
+                100%,
+                520px
+            );
+
+            padding: 35px 25px;
+
+            text-align: center;
+
+            background:
+                rgba(255,255,255,.045);
+
+            border:
+                1px solid
+                rgba(228,204,145,.30);
+
+            box-shadow:
+                0 30px 80px
+                rgba(0,0,0,.35);
+        }
+
+
+        .ornament {
+
+            font-size: 1.4rem;
+
+            color: #e4cc91;
+
+            margin-bottom: 10px;
+        }
+
+
+        h1 {
+
+            margin: 0;
+
+            font-family:
+                Georgia,
+                serif;
+
+            font-weight: normal;
+
+            font-size: 2rem;
+        }
+
+
+        .subtitle {
+
+            margin:
+                10px auto 25px;
+
+            font-size: .75rem;
+
+            line-height: 1.6;
+
+            color:
+                rgba(248,240,221,.60);
+        }
+
+
+        #reader {
+
+            width: 100%;
+
+            max-width: 420px;
+
+            margin: 0 auto;
+
+            overflow: hidden;
+
+            border:
+                1px solid
+                rgba(228,204,145,.30);
+        }
+
+
+        .status {
+
+            min-height: 25px;
+
+            margin-top: 20px;
+
+            font-size: .8rem;
+
+            color:
+                rgba(248,240,221,.65);
+        }
+
+
+        .result {
+
+            display: none;
+
+            margin-top: 25px;
+
+            padding: 25px 20px;
+
+            border:
+                1px solid
+                rgba(228,204,145,.35);
+
+            background:
+                rgba(5,11,36,.65);
+        }
+
+
+        .result.show {
+            display: block;
+        }
+
+
+        .result-icon {
+
+            font-size: 2.4rem;
+
+            margin-bottom: 10px;
+        }
+
+
+        .result.success .result-icon {
+            color: #b9dfb9;
+        }
+
+
+        .result.warning .result-icon {
+            color: #e8c98a;
+        }
+
+
+        .result.error .result-icon {
+            color: #e8a2a2;
+        }
+
+
+        .result-name {
+
+            font-family:
+                Georgia,
+                serif;
+
+            font-size: 1.7rem;
+
+            margin-bottom: 8px;
+        }
+
+
+        .result-info {
+
+            font-size: .72rem;
+
+            line-height: 1.8;
+
+            color:
+                rgba(248,240,221,.65);
+        }
+
+
+        .result-info strong {
+
+            color: #e4cc91;
+        }
+
+
+        .scan-again {
+
+            display: none;
+
+            width: 100%;
+
+            margin-top: 20px;
+
+            padding: 13px;
+
+            border:
+                1px solid
+                rgba(228,204,145,.45);
+
+            background:
+                rgba(228,204,145,.10);
+
+            color: #e4cc91;
+
+            cursor: pointer;
+
+            font-size: .7rem;
+
+            letter-spacing: .12em;
+
+            text-transform: uppercase;
+        }
+
+
+        .scan-again.show {
+            display: block;
+        }
+
+
+        @media (max-width: 480px) {
+
+            .panel {
+                padding: 30px 17px;
+            }
+
+            h1 {
+                font-size: 1.7rem;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <main class="panel">
+
+        <div class="ornament">
+            ✦
+        </div>
+
+
+        <h1>
+            Control de Entrada
+        </h1>
+
+
+        <p class="subtitle">
+
+            Mis XV · Arleth
+
+            <br>
+
+            Escanea el código QR
+            de cada invitado.
+
+        </p>
+
+
+        <!-- ESCÁNER -->
+
+        <div id="reader"></div>
+
+
+        <!-- ESTADO -->
+
+        <div
+            class="status"
+            id="status"
+        >
+            Esperando código...
+        </div>
+
+
+        <!-- RESULTADO -->
+
+        <div
+            class="result"
+            id="result"
+        >
+
+            <div
+                class="result-icon"
+                id="resultIcon"
+            >
+                ✓
+            </div>
+
+
+            <div
+                class="result-name"
+                id="resultName"
+            >
+                —
+            </div>
+
+
+            <div
+                class="result-info"
+                id="resultInfo"
+            >
+                —
+            </div>
+
+        </div>
+
+
+        <button
+            class="scan-again"
+            id="scanAgain"
+        >
+            Escanear siguiente invitado
+        </button>
+
+    </main>
+
+
+<script>
+
+
+/* =========================================================
+   SUPABASE
+========================================================= */
+
+const SUPABASE_URL =
+    "https://qwbilqesobnzbzjpbspu.supabase.co";
+
+
+const SUPABASE_KEY =
+    "sb_publishable_oVQQx33bX-jRHdcepOIGmw_rfnj2QDu";
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =========================================================
+   ELEMENTOS
+========================================================= */
+
+const statusElement =
+    document.getElementById("status");
+
+
+const result =
+    document.getElementById("result");
+
+
+const resultIcon =
+    document.getElementById("resultIcon");
+
+
+const resultName =
+    document.getElementById("resultName");
+
+
+const resultInfo =
+    document.getElementById("resultInfo");
+
+
+const scanAgain =
+    document.getElementById("scanAgain");
+
+
+/* =========================================================
+   CONTROL DEL ESCÁNER
+========================================================= */
+
+let scanner = null;
+
+let procesando = false;
+
+
+/* =========================================================
+   MOSTRAR RESULTADO
+========================================================= */
+
+function mostrarResultado(
+    tipo,
+    icono,
+    nombre,
+    informacion
+) {
+
+    result.className =
+        `result show ${tipo}`;
+
+
+    resultIcon.textContent =
+        icono;
+
+
+    resultName.textContent =
+        nombre;
+
+
+    resultInfo.innerHTML =
+        informacion;
+
+
+    scanAgain.classList.add(
+        "show"
+    );
+}
+
+
+/* =========================================================
+   VALIDAR QR
+========================================================= */
+
+async function validarQR(codigoQR) {
+
+    if (procesando) {
+        return;
+    }
+
+
+    procesando = true;
+
+
+    statusElement.textContent =
+        "Verificando invitación...";
+
+
+    try {
+
+        const codigo =
+            codigoQR
+                .trim()
+                .toUpperCase();
+
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+
+            .from("invitaciones")
+
+            .select(
+                "nombre, codigo, cantidad, tipo, confirmado, asistio, activo"
+            )
+
+            .eq("codigo", codigo)
+
+            .eq("activo", true)
+
+            .single();
+
+
+        /* =================================================
+           CÓDIGO NO ENCONTRADO
+        ================================================= */
+
+        if (error || !data) {
+
+            console.error(
+                "QR no válido:",
+                error
+            );
+
+
+            mostrarResultado(
+                "error",
+                "✕",
+                "Código no válido",
+                `
+                    Este QR no corresponde
+                    a una invitación válida.
+                `
+            );
+
+
+            statusElement.textContent =
+                "QR rechazado.";
+
+            return;
+        }
+
+
+        /* =================================================
+           NO CONFIRMÓ
+        ================================================= */
+
+        if (!data.confirmado) {
+
+            mostrarResultado(
+                "warning",
+                "!",
+                data.nombre,
+                `
+                    Esta invitación
+                    <strong>
+                        no ha confirmado asistencia.
+                    </strong>
+                `
+            );
+
+
+            statusElement.textContent =
+                "Entrada pendiente de confirmación.";
+
+            return;
+        }
+
+
+        /* =================================================
+           YA INGRESÓ
+        ================================================= */
+
+        if (data.asistio) {
+
+            mostrarResultado(
+                "warning",
+                "⚠",
+                "Ya registró su ingreso",
+                `
+                    <strong>
+                        ${data.nombre}
+                    </strong>
+
+                    <br>
+
+                    Esta invitación
+                    ya fue utilizada para ingresar.
+                `
+            );
+
+
+            statusElement.textContent =
+                "Ingreso duplicado.";
+
+            return;
+        }
+
+
+        /* =================================================
+           REGISTRAR INGRESO
+        ================================================= */
+
+        const {
+            data: actualizada,
+            error: updateError
+        } = await supabaseClient
+
+            .from("invitaciones")
+
+            .update({
+                asistio: true
+            })
+
+            .eq("codigo", codigo)
+
+            .eq("activo", true)
+
+            .eq("confirmado", true)
+
+            .eq("asistio", false)
+
+            .select(
+                "nombre, codigo, cantidad, tipo, confirmado, asistio"
+            )
+
+            .single();
+
+
+        if (updateError || !actualizada) {
+
+            console.error(
+                "Error registrando ingreso:",
+                updateError
+            );
+
+
+            mostrarResultado(
+                "error",
+                "✕",
+                "No se pudo registrar",
+                `
+                    Ocurrió un problema
+                    al registrar el ingreso.
+                `
+            );
+
+
+            statusElement.textContent =
+                "Error al registrar.";
+
+            return;
+        }
+
+
+        /* =================================================
+           ACCESO AUTORIZADO
+        ================================================= */
+
+        mostrarResultado(
+            "success",
+            "✓",
+            "¡Acceso autorizado!",
+            `
+                <strong>
+                    ${actualizada.nombre}
+                </strong>
+
+                <br>
+
+                ${actualizada.cantidad}
+                ${
+                    actualizada.cantidad === 1
+                        ? "persona"
+                        : "personas"
+                }
+
+                <br>
+
+                Código:
+                <strong>
+                    ${actualizada.codigo}
+                </strong>
+
+                <br>
+
+                ✓ Ingreso registrado
+            `
+        );
+
+
+        statusElement.textContent =
+            "Invitado registrado correctamente.";
+
+
+    } catch (error) {
+
+        console.error(
+            "Error inesperado:",
+            error
+        );
+
+
+        mostrarResultado(
+            "error",
+            "✕",
+            "Error",
+            `
+                Ocurrió un error
+                al verificar el QR.
+            `
+        );
+
+
+        statusElement.textContent =
+            "No se pudo verificar.";
+
+    }
+
+}
+
+
+/* =========================================================
+   QR DETECTADO
+========================================================= */
+
+function qrDetectado(
+    decodedText
+) {
+
+    validarQR(decodedText);
+
+}
+
+
+/* =========================================================
+   INICIAR ESCÁNER
+========================================================= */
+
+function iniciarScanner() {
+
+    procesando = false;
+
+
+    result.className =
+        "result";
+
+
+    scanAgain.classList.remove(
+        "show"
+    );
+
+
+    statusElement.textContent =
+        "Apunta la cámara al código QR...";
+
+
+    scanner =
+        new Html5Qrcode(
+            "reader"
+        );
+
+
+    scanner.start(
+
+        {
+            facingMode: "environment"
+        },
+
+        {
+            fps: 10,
+
+            qrbox: {
+                width: 250,
+                height: 250
+            }
+        },
+
+        qrDetectado,
+
+        () => {
+            /* Ignorar errores de lectura */
+        }
+
+    ).catch(
+        (error) => {
+
+            console.error(
+                "No se pudo iniciar la cámara:",
+                error
+            );
+
+
+            statusElement.textContent =
+                "No se pudo acceder a la cámara. Revisa los permisos del navegador.";
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   DETENER ESCÁNER
+========================================================= */
+
+async function detenerScanner() {
+
+    if (!scanner) {
+        return;
+    }
+
+
+    try {
+
+        await scanner.stop();
+
+        await scanner.clear();
+
+    } catch (error) {
+
+        console.warn(
+            "No se pudo detener completamente el scanner:",
+            error
+        );
+
+    }
+
+
+    scanner = null;
+}
+
+
+/* =========================================================
+   SIGUIENTE INVITADO
+========================================================= */
+
+scanAgain.addEventListener(
+    "click",
+    async () => {
+
+        await detenerScanner();
+
+        iniciarScanner();
+
+    }
+);
+
+
+/* =========================================================
+   INICIAR
+========================================================= */
+
+iniciarScanner();
+
+
+</script>
+
+</body>
+
+</html>
